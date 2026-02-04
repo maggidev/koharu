@@ -15,7 +15,6 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # Focado apenas em Linux e Windows
         os: [windows-latest, ubuntu-latest]
     
     runs-on: ${{ matrix.os }}
@@ -23,7 +22,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       
-      # Dependências limpas para Ubuntu 24.04 (Noble)
       - name: Install Linux dependencies
         if: matrix.os == 'ubuntu-latest'
         run: |
@@ -40,14 +38,12 @@ jobs:
       - uses: oven-sh/setup-bun@v2
       - uses: Swatinem/rust-cache@v2
       
-      # Versão 12.6.0 é a recomendada para evitar erros de "Package not found" no Ubuntu 24.04
       - name: Install CUDA
         id: cuda-toolkit
         uses: Jimver/cuda-toolkit@master
         with:
           cuda: '12.6.0'
           method: 'network'
-          # Removido sub-packages manuais para o script autodetectar os nomes corretos da distro
           
       - uses: ilammy/msvc-dev-cmd@v1
         if: matrix.os == 'windows-latest'
@@ -56,16 +52,17 @@ jobs:
         run: bun install
         
       - name: Build Tauri App
-        run: bun tauri build
-      
+        run: bun tauri build --bundles deb appimage msi nsis
+
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
           name: koharu-build-${{ matrix.os }}
           path: |
-            **/target/release/bundle/deb/*.deb
-            **/target/release/bundle/appimage/*.AppImage
-            **/target/release/bundle/msi/*.msi
-            **/target/release/bundle/nsis/*.exe
-            **/target/release/koharu.exe
+            **/target/**/release/bundle/deb/*.deb
+            **/target/**/release/bundle/appimage/*.AppImage
+            **/target/**/release/bundle/msi/*.msi
+            **/target/**/release/bundle/nsis/*.exe
+            **/target/**/release/koharu
+            **/target/**/release/koharu.exe
           if-no-files-found: warn
