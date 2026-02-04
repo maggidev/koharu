@@ -14,28 +14,44 @@ jobs:
     name: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [macos-latest, windows-latest]
+        # Adicionado ubuntu-latest aqui
+        os: [macos-latest, windows-latest, ubuntu-latest]
       fail-fast: false
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v6
+      
+      # Instala dependências específicas do Linux (Essencial para Tauri)
+      - name: Install Linux dependencies
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libgtk-3-dev libwebkit2gtk-4.0-dev libappindicator3-dev librsvg2-dev patchelf
+      
       - uses: oven-sh/setup-bun@v2
       - uses: Swatinem/rust-cache@v2
-      - uses: Jimver/cuda-toolkit@master
-        if: matrix.os == 'windows-latest'
+      
+      # Instala CUDA no Windows e Linux
+      - name: Install CUDA
+        if: matrix.os != 'macos-latest'
+        uses: Jimver/cuda-toolkit@master
         with:
-          cuda: '12.9.1'
+          cuda: '12.4.1' # Versão estável recomendada para Ubuntu 22.04+
           method: 'network'
           sub-packages: '["cudart", "cublas", "cufft", "nvcc"]'
+          
       - uses: ilammy/msvc-dev-cmd@v1
         if: matrix.os == 'windows-latest'
+        
       - run: bun install
       - run: bun tauri build
-      # upload artifacts
+      
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
           name: koharu-${{ matrix.os }}
           path: |
             target/release/koharu*
+            src-tauri/target/release/bundle/deb/*.deb
+            src-tauri/target/release/bundle/appimage/*.AppImage
           retention-days: 3
