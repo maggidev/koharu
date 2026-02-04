@@ -52,7 +52,7 @@ jobs:
         run: bun install
         
       - name: Build Tauri App
-        run: bun tauri build --bundles deb appimage msi nsis
+        run: bun tauri build --bundles deb appimage rpm nsis
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
