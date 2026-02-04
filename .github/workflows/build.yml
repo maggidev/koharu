@@ -3,15 +3,14 @@ name: Build Linux
 on:
   push:
     branches: ['main']
-  pull_request:
 
 env:
   CARGO_TERM_COLOR: always
 
 jobs:
   build:
-    name: ubuntu-22.04
-    runs-on: ubuntu-22.04
+    name: ubuntu-latest
+    runs-on: ubuntu-latest
     
     steps:
       - uses: actions/checkout@v4
@@ -27,8 +26,7 @@ jobs:
             patchelf \
             javascriptcoregtk-4.1 \
             libsoup-3.0-dev \
-            libjavascriptcoregtk-4.1-dev # Adicionado explicitamente
-
+            upx-ucl
 
       - uses: oven-sh/setup-bun@v2
       - uses: Swatinem/rust-cache@v2
@@ -37,14 +35,19 @@ jobs:
         run: bun install
         
       - name: Build Tauri App
+        # Usamos o caminho explícito para evitar erros de workspace
         run: bun tauri build
+
+      - name: Compress Binary
+        run: |
+          # Compacta o executável para que o Hugging Face não trave no "Paused"
+          # O caminho pode variar dependendo da sua arquitetura, o curinga garante o acerto
+          find target/release -maxdepth 1 -type f -name "koharu" -exec upx --best --lzma {} + || true
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
           name: koharu-linux
           path: |
-            **/target/release/bundle/deb/*.deb
-            **/target/release/bundle/appimage/*.AppImage
             **/target/release/koharu
           if-no-files-found: error
